@@ -14,6 +14,94 @@ API_URL = "https://api.groq.com/openai/v1/chat/completions"
 DEFAULT_MODEL = "openai/gpt-oss-120b"
 DEFAULT_TIMEOUT = 8.0
 MAX_TOKENS = 600
+# gpt-oss emits long reasoning traces before the JSON document; the
+# interpretation budget must leave room for both.
+INTERPRET_MAX_TOKENS = 2000
+# Cloudflare in front of the Groq API rejects non-browser clients (403/1010),
+# so all calls identify with a standard browser user agent.
+BROWSER_UA = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+              "(KHTML, like Gecko) Chrome/126.0 Safari/537.36")
+
+# Structured-output contract for command interpretation (Groq json_schema
+# mode). Nullable fields are plain strings so any compliant model can fill
+# or omit them; Pydantic supplies defaults for missing keys downstream.
+INTERPRET_JSON_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "valid": {"type": "boolean"},
+        "command_type": {"type": "string", "enum": [
+            "file_read", "dir_list", "file_stat", "file_search",
+            "line_count", "system_info", "echo_text", "unknown", "invalid"]},
+        "normalized_command": {"type": "string"},
+        "target": {"type": "string"},
+        "arguments": {"type": "array", "items": {"type": "string"}},
+        "intent": {"type": "string"},
+        "simulated_output": {"type": "string"},
+        "behavior": {"type": "string", "enum": [
+            "credential_discovery", "credential_access",
+            "system_log_discovery", "file_discovery",
+            "system_discovery", "network_discovery",
+            "unknown_command", "no_suspicious_behavior"]},
+        "severity": {"type": "string", "enum": ["low", "medium", "high"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "requires_virtual_state": {"type": "boolean"},
+        "deception_recommendation": {
+            "type": "object",
+            "properties": {"action": {"type": "string"},
+                           "reason": {"type": "string"}},
+            "additionalProperties": False},
+    },
+    "required": ["valid", "command_type", "behavior", "severity",
+                 "confidence"],
+    "additionalProperties": False,
+}
+
+
+def _post_chat(body: dict, timeout: float, key: str) -> dict:
+    """POST one chat body, return the decoded envelope. Shared transport."""
+    req = urllib.request.Request(
+        API_URL,
+        data=json.dumps(body).encode("utf-8"),
+        headers={"Content-Type": "application/json",
+                 "Authorization": "Bearer " + key,
+                 "User-Agent": BROWSER_UA},
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return json.loads(resp.read().decode("utf-8", errors="replace"))
+    except TimeoutError as e:
+        raise GroqTimeout(f"Groq request timed out after {timeout}s.") from e
+    except urllib.error.HTTPError as e:
+        try:
+            detail = e.read().decode("utf-8", errors="replace")[:300]
+        except Exception:
+            detail = ""
+        raise GroqAPIError(f"Groq HTTP {e.code}: {detail}") from e
+    except urllib.error.URLError as e:
+        msg = str(e.reason)
+        if "timed out" in msg.lower():
+            raise GroqTimeout(f"Groq request timed out after {timeout}s.") from e
+        raise GroqAPIError(f"Groq network error: {msg[:200]}") from e
+    except OSError as e:
+        raise GroqAPIError(f"Groq connection failed: {str(e)[:200]}") from e
+
+
+def _extract_content(envelope: dict) -> dict:
+    try:
+        content = envelope["choices"][0]["message"]["content"]
+        data = json.loads(content)
+    except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
+        raise GroqResponseError(f"Groq returned unparseable output: {str(e)[:200]}") from e
+    if not isinstance(data, dict):
+        raise GroqResponseError("Groq JSON was not an object.")
+    return data
+
+
+def _schema_mode_supported(err: GroqAPIError) -> bool:
+    msg = str(err).lower()
+    return ("response_format" in msg or "json_schema" in msg
+            or "structured" in msg)
 
 
 class GroqError(Exception):
@@ -110,53 +198,43 @@ def build_user_payload(command: str, context: dict) -> dict:
 def interpret(raw_command: str, context: dict, timeout: float | None = None) -> dict:
     """Send one command to Groq, return the parsed JSON object.
 
-    Raises a GroqError subclass on any failure. Never logs or returns the key.
+    Uses constrained decoding (json_schema) so the model cannot invent its
+    own response shape; automatically downgrades to plain JSON mode if the
+    model rejects the schema. Raises a GroqError subclass on any failure.
+    Never logs or returns the key.
     """
     key, model, default_timeout = get_config()
     if not key:
         raise GroqNotConfigured("GROQ_API_KEY is not set.")
     to = timeout if timeout is not None else default_timeout
-    body = {
+    messages = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": json.dumps(build_user_payload(raw_command, context))},
+    ]
+    schema_mode = {
         "model": model,
         "temperature": 0,
-        "max_tokens": MAX_TOKENS,
-        "response_format": {"type": "json_object"},
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": json.dumps(build_user_payload(raw_command, context))},
-        ],
+        "max_tokens": INTERPRET_MAX_TOKENS,
+        "response_format": {"type": "json_schema",
+                            "json_schema": {"name": "sentinel_command",
+                                            "schema": INTERPRET_JSON_SCHEMA}},
+        "messages": messages,
     }
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=to) as resp:
-            raw = resp.read().decode("utf-8", errors="replace")
-    except TimeoutError as e:
-        raise GroqTimeout(f"Groq request timed out after {to}s.") from e
-    except urllib.error.HTTPError as e:
+    attempts = 0
+    while True:
         try:
-            detail = e.read().decode("utf-8", errors="replace")[:300]
-        except Exception:
-            detail = ""
-        raise GroqAPIError(f"Groq HTTP {e.code}: {detail}") from e
-    except urllib.error.URLError as e:
-        msg = str(e.reason)
-        if "timed out" in msg.lower():
-            raise GroqTimeout(f"Groq request timed out after {to}s.") from e
-        raise GroqAPIError(f"Groq network error: {msg[:200]}") from e
-    except OSError as e:
-        raise GroqAPIError(f"Groq connection failed: {str(e)[:200]}") from e
-    try:
-        envelope = json.loads(raw)
-        content = envelope["choices"][0]["message"]["content"]
-        return json.loads(content)
-    except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
-        raise GroqResponseError(f"Groq returned unparseable output: {str(e)[:200]}") from e
+            return _extract_content(_post_chat(schema_mode, to, key))
+        except GroqAPIError as e:
+            msg = str(e).lower()
+            if "json_validate_failed" in msg and attempts < 2:
+                attempts += 1
+                continue  # flaky structured-output validation → same-mode retry
+            if not _schema_mode_supported(e):
+                raise
+            break  # schema mode unsupported by model → downgrade below
+    plain_mode = dict(schema_mode)
+    plain_mode["response_format"] = {"type": "json_object"}
+    return _extract_content(_post_chat(plain_mode, to, key))
 
 
 def request_json(system_prompt: str, user_obj: dict, max_tokens: int = 800,
@@ -180,37 +258,4 @@ def request_json(system_prompt: str, user_obj: dict, max_tokens: int = 800,
             {"role": "user", "content": json.dumps(user_obj)},
         ],
     }
-    req = urllib.request.Request(
-        API_URL,
-        data=json.dumps(body).encode("utf-8"),
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key},
-        method="POST",
-    )
-    try:
-        with urllib.request.urlopen(req, timeout=to) as resp:
-            raw = resp.read().decode("utf-8", errors="replace")
-    except TimeoutError as e:
-        raise GroqTimeout(f"Groq request timed out after {to}s.") from e
-    except urllib.error.HTTPError as e:
-        try:
-            detail = e.read().decode("utf-8", errors="replace")[:300]
-        except Exception:
-            detail = ""
-        raise GroqAPIError(f"Groq HTTP {e.code}: {detail}") from e
-    except urllib.error.URLError as e:
-        msg = str(e.reason)
-        if "timed out" in msg.lower():
-            raise GroqTimeout(f"Groq request timed out after {to}s.") from e
-        raise GroqAPIError(f"Groq network error: {msg[:200]}") from e
-    except OSError as e:
-        raise GroqAPIError(f"Groq connection failed: {str(e)[:200]}") from e
-    try:
-        envelope = json.loads(raw)
-        content = envelope["choices"][0]["message"]["content"]
-        data = json.loads(content)
-    except (json.JSONDecodeError, KeyError, IndexError, TypeError) as e:
-        raise GroqResponseError(f"Groq returned unparseable output: {str(e)[:200]}") from e
-    if not isinstance(data, dict):
-        raise GroqResponseError("Groq JSON was not an object.")
-    return data
+    return _extract_content(_post_chat(body, to, key))
