@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>server01 — SSH</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/terminal.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+<style>
+  body{background:#0B1220;color:#E6EAF2;min-height:100vh;display:flex;flex-direction:column}
+  .ssh-bar{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid #1b2740;font-size:13.5px;color:#98A2B3}
+  .ssh-bar .host{color:#E6EAF2;font-weight:650}
+  .ssh-bar .spacer{flex:1}
+  .ssh-bar .btn{background:#131c31;border-color:#263252;color:#E6EAF2}
+  .ssh-bar .btn:hover{background:#1a2540}
+  .ssh-bar a{color:#8FB0FF}
+  .term-stage{flex:1;display:flex;padding:22px;width:100%;margin:0}
+  .terminal{flex:1;display:flex;flex-direction:column}
+  .term-body{flex:1;min-height:56vh}
+</style>
+</head>
+<body>
+  <div class="ssh-bar">
+    <span class="host">sentinel@server01</span>
+    <span>· 10.0.0.8 · SSH</span>
+    <span class="pill" id="conn" style="background:#131c31;border-color:#263252;color:#98A2B3">Connecting…</span>
+    <span class="spacer"></span>
+    <button class="btn" id="btn-new">New session</button>
+    <button class="btn danger" id="btn-reset" style="color:#FDA29B">Reset</button>
+    <a href="/index.html">Defender view →</a>
+  </div>
+  <div class="term-stage">
+    <div class="terminal">
+      <div class="term-body" id="term-body"></div>
+      <div style="display:flex;gap:6px;padding:12px 16px;border-top:1px solid #1b2740;font-family:var(--mono);color:#E6EAF2">
+        <span style="color:#8FB0FF;font-weight:700">$</span>
+        <input id="term-input" class="term-input" autocomplete="off" spellcheck="false" placeholder="type a command, e.g. ls /srv/meridian">
+      </div>
+    </div>
+  </div>
+  <div style="height:14px"></div>
+  <div class="modal-back" id="reset-modal"><div class="modal">
+    <h3>Reset this session?</h3>
+    <p class="meta">All session telemetry and virtual state will be permanently cleared.</p>
+    <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+      <button class="btn" id="btn-cancel-reset">Cancel</button>
+      <button class="btn primary" id="btn-confirm-reset">Reset</button>
+    </div>
+  </div></div>
+  <div class="toast" id="toast"></div>
+<script src="/js/api.js?v=5"></script><script src="/js/terminal.js?v=5"></script>
+</body>
+</html>

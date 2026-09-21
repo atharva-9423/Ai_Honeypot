@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTINEL — System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">SENTI<span>NEL</span></div>
+    <a class="nav-link" href="/real.html">Real System</a>
+    <button class="nav-group" id="hp-toggle" aria-expanded="true"><span>AI Honeypot</span><span class="chev">▾</span></button>
+    <div class="nav-sub" id="hp-sub">
+      <a class="nav-link" href="/index.html">Overview</a>
+      <a class="nav-link" href="/intelligence.html">Intelligence</a>
+      <a class="nav-link" href="/reports.html">Reports</a>
+      <a class="nav-link active" href="/system.html">System</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 class="page-title">System status</h1><p class="page-sub">Safety posture and runtime configuration.</p></div>
+      <div class="pill"><span class="dot"></span> Protected</div>
+    </div>
+    <div class="grid grid-2">
+      <div class="card"><h3>Safety guarantees</h3>
+        <ul style="font-size:14px">
+          <li>Terminal input is treated as data and never executed on the host</li>
+          <li>Virtual filesystem only — no host file access</li>
+          <li>No external connections, scans, or counter-attacks</li>
+          <li>Planted decoy credentials are monitored on every access</li>
+          <li>Command interpretation is validated against the virtual environment</li>
+        </ul></div>
+      <div class="card"><h3>Runtime</h3><div id="sys"></div>
+        <p style="margin-top:12px"><button class="btn danger" id="btn-wipe">Clear local session reference</button></p>
+        <p class="meta">Backend: <code>uvicorn backend.main:app --port 8000</code></p>
+      </div>
+    </div>
+    <h2 class="section-title">Danger zone</h2>
+    <div class="card" style="border-color:#FECDCA"><h3>Reset whole application</h3>
+      <p class="meta">Permanently removes all honeypot data: sessions, events, indicators, deception actions, transcripts and learning state. The Real System reference is left untouched.</p>
+      <p><button class="btn danger" id="btn-reset-all">Reset whole app…</button></p>
+    </div>
+  </main>
+</div>
+<div class="modal-back" id="reset-all-modal"><div class="modal">
+  <h3>Reset the whole application?</h3>
+  <p class="meta">Every session, event, timeline entry, indicator and deception record will be permanently deleted. This cannot be undone.</p>
+  <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:16px">
+    <button class="btn" id="btn-cancel-reset-all">Cancel</button>
+    <button class="btn primary" id="btn-confirm-reset-all">Reset everything</button>
+  </div>
+</div></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/api.js?v=5"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const d = await api('/api/health');
+    document.getElementById('sys').innerHTML = `<dl class="kv"><dt>Status</dt><dd>${esc(d.status)}</dd><dt>Mode</dt><dd>${esc(d.system)}</dd><dt>Command assistance</dt><dd>Ready</dd></dl>`;
+  } catch { document.getElementById('sys').textContent = 'Backend unreachable.'; }
+  document.getElementById('btn-wipe').addEventListener('click', () => { store.clear(); toast('Local session reference cleared.'); });
+  document.getElementById('btn-reset-all').addEventListener('click', () => {
+    document.getElementById('reset-all-modal').classList.add('open');
+  });
+  document.getElementById('btn-cancel-reset-all').addEventListener('click', () => {
+    document.getElementById('reset-all-modal').classList.remove('open');
+  });
+  document.getElementById('btn-confirm-reset-all').addEventListener('click', async () => {
+    document.getElementById('reset-all-modal').classList.remove('open');
+    try {
+      const r = await api('/api/admin/reset-all', { method: 'POST', body: JSON.stringify({ confirm: true }) });
+      store.clear();
+      toast(`Application reset — ${r.sessions_cleared} session(s) and all records cleared.`);
+    } catch (e) { toast(`Reset failed: ${e.message}`); }
+  });
+});
+</script>
+</body>
+</html>

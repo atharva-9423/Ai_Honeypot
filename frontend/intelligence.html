@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTINEL — Intelligence</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">SENTI<span>NEL</span></div>
+    <a class="nav-link" href="/real.html">Real System</a>
+    <button class="nav-group" id="hp-toggle" aria-expanded="true"><span>AI Honeypot</span><span class="chev">▾</span></button>
+    <div class="nav-sub" id="hp-sub">
+      <a class="nav-link" href="/index.html">Overview</a>
+      <a class="nav-link active" href="/intelligence.html">Intelligence</a>
+      <a class="nav-link" href="/reports.html">Reports</a>
+      <a class="nav-link" href="/system.html">System</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 class="page-title">Intelligence</h1><p class="page-sub">Behavioral profile, indicators and MITRE mapping for session <strong id="intel-sid">—</strong>.</p></div>
+      <a class="btn primary" href="/reports.html">Generate report</a>
+    </div>
+    <div id="intel"></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/api.js?v=6"></script><script src="/js/intelligence.js?v=6"></script>
+</body>
+</html>

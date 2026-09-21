@@ -1,0 +1,12 @@
+.term-wrap{display:grid;grid-template-columns:1.5fr 1fr;gap:16px}
+@media(max-width:960px){.term-wrap{grid-template-columns:1fr}}
+.terminal{background:#0B1220;border-radius:14px;padding:0;overflow:hidden;border:1px solid #1b2740}
+.term-head{display:flex;align-items:center;gap:8px;padding:10px 14px;border-bottom:1px solid #1b2740;color:#98A2B3;font-size:12.5px}
+.term-head i{width:11px;height:11px;border-radius:50%;display:inline-block}
+.term-body{padding:16px;font-family:var(--mono);font-size:13.5px;line-height:1.65;color:#E6EAF2;height:460px;overflow-y:auto}
+.term-line .prompt{color:#8FB0FF;font-weight:700}
+.term-input-row{display:flex;gap:6px;align-items:baseline}
+.term-input{background:transparent;border:none;outline:none;color:#E6EAF2;font:inherit;flex:1}
+.term-out{white-space:pre-wrap;word-break:break-word;color:#D0D5DD}
+.term-err{color:#FECDC2}
+.side-stack{display:flex;flex-direction:column;gap:16px}

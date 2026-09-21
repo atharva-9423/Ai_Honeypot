@@ -1,0 +1,5 @@
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:16px;margin:18px 0}
+@media(max-width:900px){.metrics{grid-template-columns:repeat(2,1fr)}}
+.cols{display:grid;grid-template-columns:1.35fr 1fr;gap:16px}
+@media(max-width:900px){.cols{grid-template-columns:1fr}}
+.hint{background:var(--accent-soft);border:1px solid #C7D2FE;border-radius:12px;padding:12px 14px;font-size:13.5px;margin-top:12px}

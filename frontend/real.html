@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTINEL — Real System</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/dashboard.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">SENTI<span>NEL</span></div>
+    <a class="nav-link active" href="/real.html">Real System</a>
+    <button class="nav-group" id="hp-toggle" aria-expanded="true"><span>AI Honeypot</span><span class="chev">▾</span></button>
+    <div class="nav-sub" id="hp-sub">
+      <a class="nav-link" href="/index.html">Overview</a>
+      <a class="nav-link" href="/intelligence.html">Intelligence</a>
+      <a class="nav-link" href="/reports.html">Reports</a>
+      <a class="nav-link" href="/system.html">System</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 class="page-title">Real System</h1><p class="page-sub" id="real-sub">Production reference · Meridian Logistics · Static data.</p></div>
+      <div class="pill"><span class="dot"></span> Production · Protected</div>
+    </div>
+    <div id="real"></div>
+    <h2 class="section-title">Decoys captured by the honeypot (live)</h2>
+    <div class="card"><div id="captures"></div></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/api.js?v=5"></script>
+<script>
+document.addEventListener('DOMContentLoaded', async () => {
+  const box = document.getElementById('real');
+  let real;
+  try { real = await api('/api/real-system'); }
+  catch { box.innerHTML = `<div class="empty"><h4>Reference unreachable</h4><p>Start the backend to load the production reference.</p></div>`; return; }
+  const co = real.company || {};
+  document.getElementById('real-sub').textContent =
+    `${co.name || ''} · ${co.prod_host || ''} · Production reference.`;
+  box.innerHTML = `
+    <div class="card"><h3>Company profile</h3>
+      <dl class="kv">
+        <dt>Company</dt><dd>${esc(co.name || '')}</dd>
+        <dt>Domain</dt><dd>${esc(co.domain || '')}</dd>
+        <dt>Prod host</dt><dd>${esc(co.prod_host || '')}</dd>
+        <dt>Database</dt><dd>${esc(co.db_host || '')}</dd>
+      </dl></div>
+    <h2 class="section-title">Production credentials (reference)</h2>
+    <div class="card"><table class="clean"><tr><th>System</th><th>Location</th><th>Username</th><th>Password</th><th>Sensitivity</th></tr>
+      ${(real.credentials || []).map((c) => `<tr><td>${esc(c.system)}</td><td><code>${esc(c.location)}</code></td><td><code>${esc(c.username)}</code></td><td><code>${esc(c.password)}</code></td><td><span class="badge ${esc((c.sensitivity || 'high').toLowerCase())}">${esc(c.sensitivity)}</span></td></tr>`).join('')}
+    </table><p class="meta">Compare any credential recovered from the honeypot against these values — they will never match. That mismatch is the proof the deception worked.</p></div>
+    <h2 class="section-title">Production documents (reference)</h2>
+    <div class="card">${(real.documents || []).map((d) => `<h3 style="margin-top:14px">${esc(d.label)}</h3><p class="meta">${esc(d.path)}</p><pre class="report">${esc(d.preview)}</pre>`).join('')}</div>
+    <div class="grid grid-2">
+      <div class="card"><h3>Production logs (sample)</h3>
+        ${(real.logs || []).map((l) => `<p class="meta">${esc(l.label)} · ${esc(l.path)}</p><pre class="report">${esc(l.preview)}</pre>`).join('')}</div>
+      <div class="card"><h3>Production services</h3>
+        <table class="clean"><tr><th>Service</th><th>Host</th><th>Port</th></tr>
+        ${(real.services || []).map((s) => `<tr><td>${esc(s.name)}</td><td><code>${esc(s.host)}</code></td><td>${s.port ?? '—'}</td></tr>`).join('')}</table></div>
+    </div>`;
+  const cap = document.getElementById('captures');
+  let d;
+  try { d = await api('/api/dashboard'); }
+  catch { cap.innerHTML = `<div class="empty"><h4>Telemetry unreachable</h4></div>`; return; }
+  const c = d.counts || {};
+  cap.innerHTML = !c.events
+    ? `<div class="empty"><h4>No captures yet</h4><p>Attacks are being watched for. Production credentials have never been touched — they do not exist inside the honeypot.</p></div>`
+    : `<dl class="kv"><dt>Sessions observed</dt><dd>${c.active_sessions ?? 0}</dd><dt>Behavioral events</dt><dd>${c.events ?? 0}</dd><dt>Honeytokens touched</dt><dd>${c.honeytokens_triggered ?? 0}</dd></dl>`;
+});
+</script>
+</body>
+</html>

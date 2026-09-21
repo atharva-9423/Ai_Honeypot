@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTINEL — Reports</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">SENTI<span>NEL</span></div>
+    <a class="nav-link" href="/real.html">Real System</a>
+    <button class="nav-group" id="hp-toggle" aria-expanded="true"><span>AI Honeypot</span><span class="chev">▾</span></button>
+    <div class="nav-sub" id="hp-sub">
+      <a class="nav-link" href="/index.html">Overview</a>
+      <a class="nav-link" href="/intelligence.html">Intelligence</a>
+      <a class="nav-link active" href="/reports.html">Reports</a>
+      <a class="nav-link" href="/system.html">System</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 class="page-title">Incident report</h1><p class="page-sub">Generated strictly from real session data · <span id="rep-sid">—</span></p></div>
+      <div style="display:flex;gap:8px"><button class="btn" id="btn-json">Export JSON</button><button class="btn primary" id="btn-pdf">Print / PDF</button></div>
+    </div>
+    <div id="report"></div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/api.js?v=6"></script><script src="/js/reports.js?v=6"></script>
+</body>
+</html>

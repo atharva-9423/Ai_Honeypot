@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SENTINEL — Overview</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/global.css?v=4"><link rel="stylesheet" href="/css/dashboard.css?v=4"><link rel="stylesheet" href="/css/responsive.css?v=4">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar">
+    <div class="brand">SENTI<span>NEL</span></div>
+    <a class="nav-link" href="/real.html">Real System</a>
+    <button class="nav-group" id="hp-toggle" aria-expanded="true"><span>AI Honeypot</span><span class="chev">▾</span></button>
+    <div class="nav-sub" id="hp-sub">
+      <a class="nav-link active" href="/index.html">Overview</a>
+      <a class="nav-link" href="/intelligence.html">Intelligence</a>
+      <a class="nav-link" href="/reports.html">Reports</a>
+      <a class="nav-link" href="/system.html">System</a>
+    </div>
+  </aside>
+  <main class="main">
+    <div class="topbar">
+      <div><h1 class="page-title">Overview</h1><p class="page-sub">Deception environment status and live threat telemetry.</p></div>
+      <div class="pill"><span class="dot"></span> System: Protected</div>
+    </div>
+    <div id="conn-banner" class="hint" style="display:none;border-color:#FECDCA;background:#FEF3F2"></div>
+    <div class="metrics">
+      <div class="card"><h3>Active Sessions</h3><div class="metric" id="m-sessions">0</div><div class="meta">isolated virtual environments</div></div>
+      <div class="card"><h3>Threat Level</h3><div class="metric" id="m-threat">—</div><div class="meta">highest severity observed</div></div>
+      <div class="card"><h3>Events</h3><div class="metric" id="m-events">0</div><div class="meta">behavioral detections</div></div>
+      <div class="card"><h3>Honeytokens</h3><div class="metric" id="m-honey">0</div><div class="meta">decoy credentials touched</div></div>
+    </div>
+    <div class="cols">
+      <div class="card"><h3>Live sessions</h3><p class="meta">Each session is isolated with its own filesystem and history.</p><div id="sessions"></div>
+      </div>
+      <div class="card"><h3>Attack progression</h3><p class="meta">Stages light up only with observed evidence.</p>
+        <div id="progression"></div>
+      </div>
+    </div>
+    <div class="cols">
+      <div class="card"><h3>Live attack feed</h3><p class="meta">Every command typed in the honeypot terminal, with what it triggered.</p><div id="attack-feed"></div></div>
+      <div class="card"><h3>Recent security events</h3><p class="meta">Behavioral detections across all sessions.</p><div id="recent"></div></div>
+    </div>
+  </main>
+</div>
+<div class="toast" id="toast"></div>
+<script src="/js/api.js?v=5"></script><script src="/js/dashboard.js?v=6"></script>
+</body>
+</html>

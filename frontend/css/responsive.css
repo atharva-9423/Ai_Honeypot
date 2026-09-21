@@ -1,0 +1,9 @@
+@media(max-width:860px){
+  .layout{flex-direction:column}
+  .sidebar{width:100%;height:auto;position:static;flex-direction:row;flex-wrap:wrap;align-items:center}
+  .brand{margin:0 12px 0 0}
+  .nav-label{display:none}
+  .main{padding:18px}
+  .page-title{font-size:25px}
+  .grid-3,.grid-2{grid-template-columns:1fr}
+}
