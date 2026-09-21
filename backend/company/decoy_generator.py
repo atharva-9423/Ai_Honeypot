@@ -166,7 +166,8 @@ def _groq_bundle() -> dict:
     req = urllib.request.Request(
         groq_client.API_URL, data=json.dumps(body).encode(),
         headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key}, method="POST")
+                 "Authorization": "Bearer " + key,
+                 "User-Agent": groq_client.BROWSER_UA}, method="POST")
     with urllib.request.urlopen(req, timeout=BUNDLE_TIMEOUT) as resp:
         envelope = json.loads(resp.read().decode("utf-8", errors="replace"))
     content = envelope["choices"][0]["message"]["content"]
